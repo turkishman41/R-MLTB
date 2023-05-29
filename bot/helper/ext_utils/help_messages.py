@@ -35,10 +35,11 @@ Check all yt-dlp api options from this <a href='https://github.com/yt-dlp/yt-dlp
 """
 
 MULTIZIP_HELP_MESSAGE= '''
-<b>Multi zip by replying to first file:</b>
+<b>Multi zip by replying to first file (not links):</b>
 
-<code>/cmd</code> 5(number of files)
-Number should be always before | zipname
+<code>/cmd</code> 5 (number of files) m:zip_name
+
+Number always before m:zip_name
 '''
 
 MIRROR_HELP_MESSAGE = '''         
@@ -96,8 +97,10 @@ Timeout: 60 sec.
 
 CLONE_HELP_MESSAGE = """
 Send Gdrive|Gdot|Filepress|Filebee|Appdrive|Gdflix link along with command or by replying to the link 
-<b>Multi links only by replying to first gdlink:</b>
-<code>/clone</code> 10(number of links/pathies)
+
+<b>Multi links only by replying to first gdrive link:</b>
+<code>/clone</code> 10(number of links)
+
 <b>Gdrive:</b>
-<code>/clone</code> gdrivelink
+<code>/clone</code> gdrive link
 """

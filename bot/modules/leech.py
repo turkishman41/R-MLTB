@@ -4,6 +4,7 @@ from pyrogram.filters import regex, command
 from pyrogram.handlers import CallbackQueryHandler, MessageHandler
 from pyrogram import filters
 from bot import DOWNLOAD_DIR, bot, config_dict
+from bot.helper.ext_utils.help_messages import MULTIZIP_HELP_MESSAGE
 from bot.helper.telegram_helper.bot_commands import BotCommands
 from bot.helper.telegram_helper.filters import CustomFilters
 from bot.helper.ext_utils.menu_utils import Menus, rcloneListButtonMaker, rcloneListNextPage
@@ -46,10 +47,7 @@ async def leech(client, message, extract=False, isZip=False, multiZip=False):
             if message.reply_to_message:
                 await mirror_leech(client, message, isZip=isZip, extract=extract, isLeech=True, multiZip=multiZip)
             else:
-                msg= "<b>Multi zip by replying to first file:</b>"
-                msg+= "\n\n<code>/cmd</code> 5 (number of files)"
-                msg+= "\nNumber should be always before | zipname"
-                await sendMessage(msg, message)
+                await sendMessage(MULTIZIP_HELP_MESSAGE, message)
             return
         if config_dict['MULTI_RCLONE_CONFIG'] or CustomFilters._owner_query(user_id): 
             if message.reply_to_message:
@@ -174,7 +172,7 @@ async def selection_callback(client, callback_query):
         await query.answer()     
         question= await sendMessage("Send link to leech, /ignore to cancel", message)
         try:
-            response = await client.listen.Message(filters.text, id=filters.user(user_id), timeout= 30)
+            response = await client.listen.Message(filters.text, id=filters.user(user_id), timeout=60)
             if response:
                 if "/ignore" in response.text:
                     await client.listen.Cancel(filters.user(user_id))
@@ -183,7 +181,7 @@ async def selection_callback(client, callback_query):
                     message.text = f"/leech {response.text}"
                     await mirror_leech(client, message, isZip=is_zip, extract=extract, isLeech=True)
         except TimeoutError:
-            await sendMessage("Too late 30s gone, try again!", message)
+            await sendMessage("Too late 60s gone, try again!", message)
         finally:
             await question.delete()
     elif cmd[1] == "remotes":
