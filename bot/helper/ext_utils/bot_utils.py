@@ -65,9 +65,12 @@ def is_magnet(url):
    return bool(re_match(MAGNET_REGEX, url))
 
 async def get_content_type(link):
-    async with ClientSession(trust_env=True) as session:
-            async with session.get(link) as response:
+    try:
+        async with ClientSession(trust_env=True) as session:
+            async with session.get(link, verify_ssl=False) as response:
                 return response.headers.get('Content-Type')
+    except:
+        return None
 
 def is_share_link(url):
     return bool(re_match(r'https?:\/\/.+\.gdtot\.\S+|https?:\/\/(filepress|filebee|appdrive|gdflix)\.\S+', url))
@@ -163,7 +166,7 @@ def get_readable_message():
         buttons.cb_buildbutton("⏩", "status nex")
         buttons.cb_buildbutton("♻️", "status ref")
         button = buttons.build_menu(3)
-    msg += f"<b>CPU:</b> {cpu_percent()}% | <b>FREE:</b> {get_readable_file_size(disk_usage(DOWNLOAD_DIR).free)}"
+    msg += f"<b>CPU:</b> {cpu_percent()}% | <b>FREE:</b> {get_readable_file_size(disk_usage(config_dict['DOWNLOAD_DIR']).free)}"
     msg += f"\n<b>RAM:</b> {virtual_memory().percent}% | <b>UPTIME:</b> {get_readable_time(time() - botUptime)}"
     msg += f"\n<b>DL:</b> {get_readable_file_size(dl_speed)}/s | <b>UL:</b> {get_readable_file_size(up_speed)}/s"
     return msg, button
