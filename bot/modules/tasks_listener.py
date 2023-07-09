@@ -1,10 +1,9 @@
 from html import escape
-from json import loads
+from json import loads as jsloads
 from aioshutil import move
 from os import path as ospath, remove as osremove, walk
 from aiofiles.os import listdir, makedirs
 from asyncio import create_subprocess_exec, sleep
-from asyncio.subprocess import PIPE
 from requests import utils as rutils
 from bot import DOWNLOAD_DIR, LOGGER, TG_MAX_FILE_SIZE, Interval, status_dict, status_dict_lock, user_data, aria2, config_dict
 from bot.helper.ext_utils.bot_utils import cmd_exec, is_archive, is_archive_split, is_first_archive_split, run_sync
@@ -266,42 +265,48 @@ class MirrorLeechListener:
                     LOGGER.info(f"Upload Name: {up_name}")
                 await RcloneMirror(up_dir, up_name, size, self.user_id, self).mirror()
 
-    async def onRcloneCopyComplete(self, conf, origin_dir, dest_remote, dest_dir):
+    async def onRcloneCopyComplete(self, config_path, name, dest_remote, dest_dir, isGdrive):
         async with status_dict_lock:
             if self.uid in status_dict.keys():
                 del status_dict[self.uid]
             count = len(status_dict)
-        
-        cmd = ["rclone", "size", f'--config={conf}', "--json", f"{dest_remote}:{dest_dir}{origin_dir}"]
-        process = await create_subprocess_exec(*cmd, stdout=PIPE, stderr=PIPE)
-        out, err = await process.communicate()
-        output = out.decode().strip()
-        rc = await process.wait()
+
+        button= ButtonMaker()
+        path= f"{dest_remote}:{dest_dir}/{name}"
+
+        if name.endswith("/"):
+            mime_type = 'Folder'
+        else:
+            mime_type = 'File'
+
+        cmd = ["rclone", "size", f'--config={config_path}', "--json", f"{dest_remote}:{dest_dir}{name}"]
+        out, err, rc= await cmd_exec(cmd)
         if rc != 0:
-            await sendMessage(err.decode().strip(), self.message)
+            await sendMessage(f'Error: {err}', self.message)
             return
-        else:
-            data = loads(output)   
-            files = data["count"]
-            size = human_readable_bytes(data["bytes"])
-            
-        f_out = f"**Total Files** {files}" 
-        f_out += f"\n**Total Size**: {size}"
-        f_out += f"\n<b>cc: </b>{self.tag}"
+        data = jsloads(out)   
+        msg = f"<b>Total Files</b>: {data['count']}" 
+        msg += f"\n<b>Total Size</b>: {human_readable_bytes(data['bytes'])}"
+        msg += f"\n\n<b>cc: </b>{self.tag}"
         
-        cmd = ["rclone", "link", f'--config={conf}', f"{dest_remote}:{dest_dir}{origin_dir}"]
-        process = await create_subprocess_exec(*cmd, stdout=PIPE, stderr=PIPE)
-        out, err = await process.communicate()
-        url = out.decode().strip()
-        rc = await process.wait()
-        if rc == 0:
-            button= ButtonMaker()
-            button.url_buildbutton("Cloud Link 🔗", url)
-            await sendMarkup(f_out, self.message, reply_markup= button.build_menu(1))
+        if isGdrive:   
+            link= await get_drive_link(path, config_path, mime_type)
+            if link:
+                button.url_buildbutton("Cloud Link 🔗", link)
+            else:
+                button.url_buildbutton("Cloud Link 🚫", "https://drive.google.com/uc?id=err")
         else:
-            LOGGER.info(err.decode().strip())
-            await sendMessage(f_out, self.message)
-       
+            cmd = ["rclone", "link", f'--config={config_path}', f"{dest_remote}:{dest_dir}{name}"]
+            out, err, rc= await cmd_exec(cmd)
+            url = out.strip()
+            if rc == 0:
+                button.url_buildbutton("Cloud Link 🔗", url)
+            else:
+                LOGGER.error( f'Error while getting link. Error: {err}')
+                button.url_buildbutton("Cloud Link 🚫", "http://www.example.com")
+
+        await sendMarkup(msg, self.message, reply_markup= button.build_menu(1))
+
         await clean_download(self.dir)
         if count == 0:
             await self.clean()
@@ -323,24 +328,29 @@ class MirrorLeechListener:
         else:
             await update_all_messages()
 
-    async def onRcloneUploadComplete(self, name, size, config_path, remote, base, mime_type, is_gdrive):      
+    async def onRcloneUploadComplete(self, name, size, config_path, remote, base, mime_type, isGdrive):      
         msg = f"<b>Name: </b><code>{escape(name)}</code>\n"
         msg += f"<b>Size: </b>{size}\n"
         msg += f'<b>Type: </b>{mime_type}\n\n'
-        button= ButtonMaker()
         
-        if is_gdrive:
-            link= await get_drive_link(remote, base, name, config_path, mime_type)
+        button= ButtonMaker()
+        path = f"{remote}:{base}/{name}"
+
+        if isGdrive:   
+            link= await get_drive_link(path, config_path, mime_type)
             if link:
                 button.url_buildbutton("Cloud Link 🔗", link)
+            else:
+                button.url_buildbutton("Cloud Link 🚫", "https://drive.google.com/uc?id=err")
         else:
-            cmd = ["rclone", "link", f'--config={config_path}', f"{remote}:{base}/{name}"]
+            cmd = ["rclone", "link", f'--config={config_path}', path]
             res, err, code = await cmd_exec(cmd)
             if code == 0:
                 button.url_buildbutton("Cloud Link 🔗", res)
             else:
                 LOGGER.error( f'Error while getting link. Error: {err}')
-        if is_gdrive and (GD_INDEX_URL:= config_dict['GD_INDEX_URL']):
+                button.url_buildbutton("Cloud Link 🚫", "http://www.example.com")
+        if isGdrive and (GD_INDEX_URL:= config_dict['GD_INDEX_URL']):
             encoded_path = rutils.quote(f'{base}{name}')
             share_url = f'{GD_INDEX_URL}/{encoded_path}'
             if type == "Folder":
@@ -437,8 +447,8 @@ class MirrorLeechListener:
             count = len(status_dict)
         
         if self.sameDir and self.uid in self.sameDir['tasks']:
-                self.sameDir['tasks'].remove(self.uid)
-                self.sameDir['total'] -= 1
+            self.sameDir['tasks'].remove(self.uid)
+            self.sameDir['total'] -= 1
 
         msg = f"{self.tag} Download stopped due to: {escape(error)}"    
         await sendMessage(msg, self.message)
