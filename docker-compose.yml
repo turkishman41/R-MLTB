@@ -5,8 +5,8 @@ services:
     build: .
     container_name: rcmltb
     command: bash start.sh
-    volumes:
-      - /usr/src/app/downloads:/usr/src/app/downloads:rw # optional
+    # volumes:  # optional
+    #   - /usr/src/app/downloads:/usr/src/app/downloads:rw 
     ports:
       - "51:51" # qbittorrent selection webserver
       - "5151:5151" # rclone serve index webserver

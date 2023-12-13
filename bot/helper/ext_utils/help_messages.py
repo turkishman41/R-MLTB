@@ -30,16 +30,16 @@ Check all yt-dlp api options from this <a href='https://github.com/yt-dlp/yt-dlp
 """
 
 
-MIRROR_HELP_MESSAGE = '''         
+MIRROR_HELP_MESSAGE = """         
 1. <code>/cmd</code> link 
 
 2. <b>Replying to link/file</b>    
 
-3. <b>New Name</b>: 
+3. <b>New Name: </b>
 <code>/cmd</code> link -n newname
 Note: No work with torrents.
 
-4. <b>Extract & Zip</b>: 
+4. <b>Extract & Zip: </b>
 <code>/cmd</code> link -e password (extract password protected)
 <code>/cmd</code> link -z password (zip password protected)
 
@@ -52,16 +52,19 @@ Note: No work with torrents.
 7. <b>Direct link authorization:</b>
 <code>/cmd</code> link -au username -ap password
 
-8. <b>Bittorrent selection</b>    
+8. <b>Bittorrent selection:</b>    
 <code>/cmd</code> link -s or by replying to file/link
 
-9. <b>Bittorrent seed</b>:
+9. <b>Bittorrent seed:</b>
 <code>/cmd</code> <b>d</b> link -d ratio:seed_time or by replying to file/link
 To specify ratio and seed time add -d ratio:time. Ex: -d 0.7:10 (ratio and time) or -d 0.7 (only ratio) or -d :10 (only time) where time in minutes.
 
-'''
+10. <b>Screenshots:</b>
+<code>/cmd</code> -ss (default values which is 10 photos).
+You can control this value. Example: /cmd -ss 6.
+"""
 
-LEECH_HELP_MESSAGE = '''  
+LEECH_HELP_MESSAGE = """  
 
 <b>Send link to leech, /ignore to cancel</b>
 
@@ -85,7 +88,7 @@ link -d ratio:seed_time
 To specify ratio and seed time add -d ratio:time. Ex: -d 0.7:10 (ratio and time) or -d 0.7 (only ratio) or -d :10 (only time) where time in minutes.
 
 Note: You can also reply to link to leech it with options.
-'''
+"""
 
 RSS_HELP_MESSAGE = """
 Use this format to add feed url:
@@ -119,4 +122,11 @@ Send Gdrive|Gdot|Filepress|Filebee|Appdrive|Gdflix link along with command or by
 
 2. <b>Gdrive:</b>
 <code>/clone</code> gdlink
+"""
+
+PASSWORD_ERROR_MESSAGE = """
+<b>This link requires a password!</b>
+- Insert <b>::</b> after the link and write the password after the sign.
+
+<b>Example:</b> link::my password
 """

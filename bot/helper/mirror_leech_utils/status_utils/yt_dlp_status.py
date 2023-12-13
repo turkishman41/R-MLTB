@@ -1,4 +1,9 @@
-from bot.helper.ext_utils.bot_utils import MirrorStatus, get_readable_file_size, get_readable_time, run_async
+from bot.helper.ext_utils.bot_utils import (
+    MirrorStatus,
+    get_readable_file_size,
+    get_readable_time,
+    run_async_to_sync,
+)
 from bot.helper.ext_utils.misc_utils import get_path_size
 
 
@@ -19,7 +24,7 @@ class YtDlpDownloadStatus:
         if self.__obj.downloaded_bytes != 0:
             return self.__obj.downloaded_bytes
         else:
-            return run_async(get_path_size, self.__listener.dir)
+            return run_async_to_sync(get_path_size, self.__listener.dir)
 
     def size(self):
         return get_readable_file_size(self.__obj.size)
@@ -31,22 +36,23 @@ class YtDlpDownloadStatus:
         return self.__obj.name
 
     def progress(self):
-        return f'{round(self.__obj.progress, 2)}%'
+        return f"{round(self.__obj.progress, 2)}%"
 
     def speed(self):
-        return f'{get_readable_file_size(self.__obj.download_speed)}/s'
+        return f"{get_readable_file_size(self.__obj.download_speed)}/s"
 
     def eta(self):
-        if self.__obj.eta != '-':
+        if self.__obj.eta != "-":
             return get_readable_time(self.__obj.eta)
         try:
-            seconds = (self.__obj.size - self.processed_raw()) / \
-                self.__obj.download_speed
+            seconds = (
+                self.__obj.size - self.processed_raw()
+            ) / self.__obj.download_speed
             return get_readable_time(seconds)
         except:
-            return '-'
+            return "-"
 
-    def download(self):
+    def task(self):
         return self.__obj
 
     def type(self):
