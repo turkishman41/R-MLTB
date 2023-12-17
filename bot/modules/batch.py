@@ -1,5 +1,6 @@
 from asyncio import sleep, TimeoutError
 from bot import DOWNLOAD_DIR, app, bot
+from bot.helper.ext_utils.help_messages import BATCH_HELP_DICT
 from pyrogram.errors import FloodWait
 from pyrogram import filters
 from bot.helper.ext_utils.bot_utils import create_task, new_task
@@ -33,23 +34,10 @@ async def _batch(client, message, isLeech=False):
             return
         if not await is_remote_selected(user_id, message):
             return
-    msg = """
-Send me one of the followings:               
-
-1. <b>Telegram Link</b> 
-   Public: https://t.me/channel_name/message_id
-   Private: https://t.me/c/channel_id/message_id
-
-2. <b>URL links</b> 
-   Each link separated by new line 
-   Direct link authorization: link username password
-
-3. <b>TXT file</b> 
-   Each link inside txt separated by new line        
-
-/ignore to cancel"""
     try:
-        question = await sendMessage(msg, message)
+        question = await sendMessage(
+            BATCH_HELP_DICT["Cmd"], message, BATCH_HELP_DICT["Menu"]
+        )
         response = await client.listen.Message(
             filters.document | filters.text, id=filters.user(user_id), timeout=60
         )
@@ -219,16 +207,17 @@ async def _multi(message, link, value, multi, isLeech):
         await download(nextmsg, link, multi, isLeech, value)
 
 
-mirrorbatch_handler = MessageHandler(
-    mirror_batch,
-    filters=filters.command(BotCommands.MirrorBatchCommand)
-    & (CustomFilters.user_filter | CustomFilters.chat_filter),
+bot.add_handler(
+    MessageHandler(
+        mirror_batch,
+        filters=filters.command(BotCommands.MirrorBatchCommand)
+        & (CustomFilters.user_filter | CustomFilters.chat_filter),
+    )
 )
-leechbatch__handler = MessageHandler(
-    leech_batch,
-    filters=filters.command(BotCommands.LeechBatchCommand)
-    & (CustomFilters.user_filter | CustomFilters.chat_filter),
+bot.add_handler(
+    MessageHandler(
+        leech_batch,
+        filters=filters.command(BotCommands.LeechBatchCommand)
+        & (CustomFilters.user_filter | CustomFilters.chat_filter),
+    )
 )
-
-bot.add_handler(leechbatch__handler)
-bot.add_handler(mirrorbatch_handler)
